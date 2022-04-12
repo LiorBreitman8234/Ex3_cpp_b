@@ -12,32 +12,32 @@ namespace zich {
     class Matrix {
     private:
         std::vector<std::vector<double>> mat;
-        size_t rowsNum;
-        size_t colNum;
+        int rowsNum;
+        int colNum;
     public:
-        Matrix(std::vector<double> vector, size_t rowNum, size_t colNum);
+        Matrix(std::vector<double> vector, int rowNum, int colNum);
         Matrix(Matrix& other);
         Matrix(const Matrix& other);
         ~Matrix();
         //getters
-        std::vector<double> getMatrixAsVector();
-        size_t getRowsNum() const{return this->rowsNum;}
-        size_t getColsNum() const{return this->colNum;}
+        std::vector<double> getMatrixAsVector() const;
+        int getRowsNum() const{return this->rowsNum;}
+        int getColsNum() const{return this->colNum;}
         std::vector<std::vector<double>>& getMat() {return this->mat;}
         //addition operators
         Matrix &operator+=(double x);
 
-        Matrix &operator+=(Matrix &second);
+        Matrix &operator+=(const Matrix &second);
 
-        friend Matrix operator+(Matrix& mat, double x);
         friend Matrix operator+(const Matrix& mat, double x);
-        friend Matrix operator+(Matrix& first, Matrix &second);
+        friend Matrix operator+(const Matrix& mat, double x);
+        friend Matrix operator+(const Matrix& first,const Matrix &second);
 
         Matrix &operator+();
 
         Matrix &operator++();
 
-        Matrix operator++(int);
+        Matrix operator++(int) ;
 
         Matrix& operator=(Matrix first);
 
@@ -59,17 +59,17 @@ namespace zich {
         Matrix operator--(int);
 
         //boolean operators
-        friend bool operator<(Matrix& first, Matrix &other);
+        friend bool operator<(const Matrix& first,const Matrix &other);
 
-        friend bool operator>(Matrix& first, Matrix &other);
+        friend bool operator>(const Matrix& first,const Matrix &other);
 
-        friend bool operator<=(Matrix& first, Matrix &other);
+        friend bool operator<=(const Matrix& first,const  Matrix &other);
 
-        friend bool operator>=(Matrix& first, Matrix &other);
+        friend bool operator>=(const Matrix& first,const  Matrix &other);
 
-        friend bool operator==(Matrix& first, Matrix &other);
+        friend bool operator==(const Matrix& first, const Matrix &other);
 
-        friend bool operator!=(Matrix& first, Matrix &other);
+        friend bool operator!=(const Matrix& first,const Matrix &other);
 
         //multiplication operators
         Matrix &operator*=(double x);
@@ -87,9 +87,6 @@ namespace zich {
         friend std::ostream &operator<<(std::ostream &os, const Matrix &mat);
 
         friend std::istream &operator>>(std::istream &is,Matrix& mat);
-
-        //helper
-        double getCombinationValue(size_t row, size_t column, Matrix& other);
     };
 
 

@@ -5,7 +5,7 @@
 
 #include <utility>
 namespace zich{
-    std::vector<double> Matrix::getMatrixAsVector() {
+    std::vector<double> Matrix::getMatrixAsVector() const {
         std::vector<double> toRet;
         for(size_t i =0; i < this->rowsNum;i++)
         {
@@ -16,30 +16,46 @@ namespace zich{
         return toRet;
     }
 
-    Matrix::Matrix(std::vector<double> vector, size_t rowNum, size_t colNum) {
+    Matrix::Matrix(std::vector<double> vector, int rowNum, int colNum) {
+        if(vector.size() != rowNum*colNum)
+        {
+            throw std::invalid_argument("vector wrong size");
+        }
+        if(rowNum <= 0 || colNum <= 0)
+        {
+            throw std::invalid_argument("matrix col or row must be positive");
+        }
         for(size_t i =0; i < rowNum;i++)
         {
             this->mat.emplace_back();
-            std::copy(vector.begin()+((long)(i*colNum)),vector.begin()+((long)(i*colNum))+(int)colNum, std::back_inserter(this->mat.at(i)));
+            std::copy(vector.begin()+((long)(i*(unsigned long)colNum)),vector.begin()+((long)(i*(unsigned long)colNum))+(int)colNum, std::back_inserter(this->mat.at(i)));
         }
         this->colNum = colNum;
         this->rowsNum = rowNum;
     }
-    bool operator==(Matrix& first, Matrix& other)
+    bool operator==(const Matrix& first, const Matrix& other)
     {
         if(first.getRowsNum() != other.getRowsNum() || first.getColsNum() != other.getColsNum()){
-            return false;
+            throw std::invalid_argument("matrices have to be same size");
         }
         std::vector<double> firstVect = first.getMatrixAsVector();
         std::vector<double> secondVect = other.getMatrixAsVector();
         return (firstVect == secondVect);
     }
-    bool operator!=(Matrix& first, Matrix& other)
+    bool operator!=(const Matrix& first,const Matrix& other)
     {
         return !(first == other);
     }
 
-    bool operator>(Matrix& first, Matrix& other){
+    bool operator>(const Matrix& first,const  Matrix& other){
+        if( first.colNum!= other.colNum || first.rowsNum != other.rowsNum)
+        {
+            throw std::invalid_argument("matrices not the same size");
+        }
+        if(first.getRowsNum() != other.getRowsNum() || first.getColsNum() != other.getColsNum())
+        {
+            throw std::invalid_argument("matrices have to be same size");
+        }
         std::vector<double> firstVec = first.getMatrixAsVector();
         std::vector<double> secondVec = other.getMatrixAsVector();
         double sum1 = 0;
@@ -55,17 +71,17 @@ namespace zich{
         return sum1>sum2;
     }
 
-    bool operator<(Matrix& first, Matrix& other)
+    bool operator<(const Matrix& first,const Matrix& other)
     {
         return other>first;
     }
 
-    bool operator<=(Matrix& first, Matrix& other)
+    bool operator<=(const Matrix& first,const Matrix& other)
     {
         return !(first>other);
     }
 
-    bool operator>=(Matrix& first, Matrix& other)
+    bool operator>=(const Matrix& first,const Matrix& other)
     {
         return !(first<other);
     }
@@ -81,13 +97,13 @@ namespace zich{
         return *this;
     }
 
-    Matrix operator+(Matrix& mat, double x){
+    Matrix operator+(const Matrix& mat, double x){
         auto* copy = new Matrix(mat);
         *copy+=x;
         return *copy;
     }
 
-    Matrix& Matrix::operator+=(Matrix &second) {
+    Matrix& Matrix::operator+=(const Matrix &second) {
         if(this->rowsNum != second.getRowsNum() || this->colNum != second.getColsNum()){
             throw std::invalid_argument("matrices need to be in same size");
         }
@@ -95,12 +111,12 @@ namespace zich{
         {
             for(size_t j =0; j < this->colNum;j++)
             {
-                this->mat.at(i).at(j) += second.getMat().at(i).at(j);
+                this->mat.at(i).at(j) += second.mat.at(i).at(j);
             }
         }
         return *this;
     }
-    Matrix operator+(Matrix& first, Matrix& second){
+    Matrix operator+(const Matrix& first,const Matrix& second){
         Matrix copy = first;
         copy += second;
         return copy;
@@ -116,7 +132,7 @@ namespace zich{
     }
 
     Matrix Matrix::operator++(int) {
-        Matrix& old = *this;
+        Matrix old = *this;
         operator++();
         return old;
     }
@@ -182,15 +198,15 @@ namespace zich{
     }
 
     Matrix &Matrix::operator*=(double x) {
-        for(size_t i =0 ; i < this->rowsNum;i++)
+        for(int i =0 ; i < this->rowsNum;i++)
         {
-            for(size_t j =0; j < this->colNum;j++)
+            for(int j =0; j < this->colNum;j++)
             {
-                if(this->mat.at(i).at(j) == 0)
+                if(this->mat.at((unsigned long)i).at((unsigned long)j) == 0)
                 {
                     continue;
                 }
-                this->mat.at(i).at(j)*=x;
+                this->mat.at((unsigned long)i).at((unsigned long)j)*=x;
             }
         }
         return *this;
@@ -204,15 +220,6 @@ namespace zich{
     Matrix operator*(double x, Matrix mat) {
         return mat*=x;
     }
-    double Matrix::getCombinationValue(size_t row, size_t column, Matrix& Other)
-    {
-        double value = 0;
-        for(size_t i =0; i < this->colNum;i++)
-        {
-            value+=this->mat.at(row).at(i)*Other.getMat().at(column).at(i);
-        }
-        return value;
-    }
 
     Matrix &Matrix::operator*=(Matrix &other) {
         if(this->colNum!= other.rowsNum)
@@ -220,12 +227,17 @@ namespace zich{
             throw std::invalid_argument("first matrix columns need to be the same as second matrix rows");
         }
         std::vector<std::vector<double>> newMat;
-        for(size_t i =0; i < this->colNum;i++)
+        for(size_t i =0; i < this->rowsNum;i++)
         {
-            newMat.emplace_back(std::vector<double>());
-            for(size_t j =0; i < other.getRowsNum();j++)
+            newMat.emplace_back(std::vector<double>((unsigned long)other.colNum,0));
+            for(size_t j =0; j < other.getColsNum();j++)
             {
-                newMat.at(i).push_back(this->getCombinationValue(i,j,other));
+                double newValue = 0;
+                for(size_t k = 0; k < other.getRowsNum();k++)
+                {
+                    newValue += this->mat.at(i).at(k) * other.getMat().at(k).at(j);
+                }
+                newMat.at(i).at(j) = newValue;
             }
         }
         this->mat = newMat;
@@ -251,23 +263,64 @@ namespace zich{
     std::ostream &operator<<(std::ostream &os, const Matrix &mat) {
         for(size_t i =0; i < mat.getRowsNum();i++)
         {
-            std::cout << "[";
+            os << "[";
             for(size_t j =0; j < mat.getColsNum();j++)
             {
-                std::cout << mat.mat.at(i).at(j) << " ";
+                if(j != mat.getColsNum()-1)
+                {
+                    os << mat.mat.at(i).at(j) << " ";
+
+                }
+                else
+                {
+                    os << mat.mat.at(i).at(j);
+                }
             }
-            std::cout << "]" <<std::endl;
+            if(i != mat.getRowsNum()-1)
+            {
+                os << "]" <<std::endl;
+
+            }
+            else
+            {
+                os << "]";
+            }
         }
         return os;
     }
 
     std::istream &operator>>(std::istream &is, Matrix& mat) {
         std::string data;
-        char c = '\0';
-        while(c != '\n')
+        while(!is.eof())
         {
-            is >> c;
-            data.push_back(c);
+            std::string curr;
+            is>>curr;
+            curr += ' ';
+            data += curr;
+        }
+        if(data.at(data.length()-1) == ' ')
+        {
+            data.pop_back();
+        }
+        if(data.at(0) != '[' && data.at(0) != ' ')
+        {
+            throw std::invalid_argument("wrong input");
+        }
+        for(size_t i =0; i < data.length()-1;i++)
+        {
+            if(data.at(i) == ',' && data.at(i+1) != ' ')
+            {
+                throw std::invalid_argument("wrong input");
+            }
+            if(i != data.length() -2 && data.at(i) == ']' && data.at(i+1) != ',')
+            {
+                throw std::invalid_argument("wrong input");
+            }
+            if(data.at(i) == '[' && data.at(i+1) > '9' && data.at(i+1) < '0')
+            {
+                throw std::invalid_argument("wrong input");
+            }
+
         }
         std::vector<std::string> rows;
        for(char i: data)
@@ -292,16 +345,26 @@ namespace zich{
            }
            stringIndex++;
        }
+       std::vector<std::string> newRows;
+       for(std::string row: rows)
+       {
+           while(row.at(0) != '[')
+           {
+               row.erase(row.begin());
+           }
+           row.erase(row.begin());
+           row.pop_back();
+           newRows.push_back(row);
+       }
        std::vector<std::vector<double>> matRows;
-       for(size_t i =0; i < rows.size();i++)
+       for(size_t i =0; i < newRows.size();i++)
        {
            matRows.emplace_back(std::vector<double>());
-           for(size_t j = 0 ; j < rows.at(i).size(); i++)
+           std::string number;
+           for(size_t j = 0 ; j < newRows.at(i).size(); j++)
            {
-               std::string number;
-               if(rows.at(i).at(j) != '[' && rows.at(i).at(j) != ']' && rows.at(i).at(j) != ' ' && rows.at(i).at(j) != ',')
-               {
-                   number += rows.at(i).at(j);
+               if(newRows.at(i).at(j) != ' ') {
+                   number.push_back(newRows.at(i).at(j));
                }
                else
                {
@@ -332,12 +395,6 @@ namespace zich{
     }
 
     Matrix::~Matrix() = default;
-
-    Matrix operator+(const Matrix &mat, double x) {
-        Matrix copy = Matrix(mat);
-        copy+=x;
-        return copy;
-    }
 
     Matrix::Matrix(const Matrix &other) {
         this->colNum = other.colNum;
